@@ -1,0 +1,3 @@
+<jboss-web>
+<security-domain>my-campaign</security-domain>
+</jboss-web>

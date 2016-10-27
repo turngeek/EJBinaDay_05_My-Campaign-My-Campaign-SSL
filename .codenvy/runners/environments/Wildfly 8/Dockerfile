@@ -1,0 +1,8 @@
+FROM marcusschiesser/jdk7_wildfly8
+RUN sed -i '/<security-domains>/a <security-domain name="my-campaign" cache-type="default"><authentication><login-module code="Database" flag="required"><module-option name="dsJndiName" value="java:jboss/datasources/MyCampaignDS"/><module-option name="principalsQuery" value="select password from organizer where email=?"/><module-option name="rolesQuery" value="select \x27Organizer\x27,\x27Roles\x27 from organizer where email=?"/><module-option name="hashAlgorithm" value="SHA-256"/><module-option name="hashEncoding" value="hex" /><module-option name="hashCharset" value="UTF-8" /></login-module></authentication></security-domain>' /home/user/wildfly/standalone/configuration/standalone.xml
+RUN keytool -genkey -alias my-campaign -keyalg RSA -keystore /home/user/wildfly/standalone/configuration/my-campaign.keystore -validity 10950 -dname "CN=MS, OU=turngeek, O=turngeek.press, L=Reutlingen, ST=BW, C=DE" -keypass changeit -storepass changeit
+RUN sed -i '/<security-realm name="ApplicationRealm">/a <server-identities><ssl><keystore path="my-campaign.keystore" relative-to="jboss.server.config.dir" keystore-password="changeit" alias="my-campaign" key-password="changeit" /></ssl></server-identities>' /home/user/wildfly/standalone/configuration/standalone.xml
+RUN sed -i '/<server name="default-server">/a <https-listener name="default-ssl" socket-binding="https" security-realm="ApplicationRealm" />' /home/user/wildfly/standalone/configuration/standalone.xml
+EXPOSE 8443
+ENV CODENVY_APP_PORT_8080_HTTP 8443
+ADD $app$ /home/user/wildfly/standalone/deployments/ROOT.war
